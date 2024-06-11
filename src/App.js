@@ -1,29 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
+import axios from 'axios';
 import HomeComponent from './components/homeComponent';
 import CandidatesList from './components/candidateList';
-import Dashboard from './components/dashboard'
+import Dashboard from './components/dashboard';
 import { AppBar, Toolbar, Typography } from '@mui/material';
 import Profile from './components/profile';
 
 const App = () => {
-  const [candidates, setCandidates] = useState([
-    { id: 1, name: 'John Doe', skills: 'JavaScript, React', yearsOfExperience: 5, location: 'New York', videoInterviewResults: 'Passed', codingResults: 'Excellent' },
-    { id: 2, name: 'Jane Smith', skills: 'Python, Django', yearsOfExperience: 3, location: 'San Francisco', videoInterviewResults: 'Passed', codingResults: 'Good' },
-  ]);
-
-  const [droppableId, setDroppableId] = useState('candidates'); 
+  const [candidates, setCandidates] = useState([]);
+  const [droppableId, setDroppableId] = useState('candidates');
+const apiUrl ='http://localhost:3000/api/candidates'
+  useEffect(() => {
+    axios.get(apiUrl)
+      .then(response => setCandidates(response.data))
+      .catch(error => console.error('Error fetching candidates:', error));
+  }, []);
 
   const addCandidate = (candidate) => {
-    const newCandidates = [...candidates, { ...candidate, id: candidates.length + 1 }];
-    setCandidates(newCandidates);
-    setDroppableId(`candidates-${newCandidates.length}`);
+    axios.post(apiUrl, candidate)
+      .then(response => {
+        const newCandidate = response.data;
+        const prevCandidates = candidates;
+        setCandidates([...prevCandidates, newCandidate]);
+        setDroppableId(`candidates-${prevCandidates.length + 1}`);
+      })
+      .catch(error => console.error('Error adding candidate:', error));
   };
 
-  const updateCandidate = (index, updatedCandidate) => {
-    const newCandidates = [...candidates];
-    newCandidates[index] = updatedCandidate;
-    setCandidates(newCandidates);
+  const updateCandidate = (id, updatedCandidate) => {
+    axios.put(`${apiUrl}/${id}`, updatedCandidate)
+      .then(response => {
+        const updated = response.data;
+        setCandidates(prevCandidates =>
+          prevCandidates.map(candidate => candidate._id === id ? updated : candidate)
+        );
+      })
+      .catch(error => console.error('Error updating candidate:', error));
   };
 
   return (
@@ -50,17 +63,15 @@ const App = () => {
           <Route
             path="/"
             element={
-              <>
-                <CandidatesList candidates={candidates} setCandidates={setCandidates} droppableId={droppableId} />
-              </>
+              <CandidatesList candidates={candidates} setCandidates={setCandidates} droppableId={droppableId} />
             }
           />
           <Route path="/add" element={<HomeComponent addCandidate={addCandidate} />} />
           <Route
-            path="/edit/:index"
+            path="/edit/:id"
             element={<HomeComponent candidates={candidates} updateCandidate={updateCandidate} />}
           />
-           <Route
+          <Route
             path="/dashboard"
             element={<Dashboard candidates={candidates} />}
           />
@@ -69,7 +80,6 @@ const App = () => {
             element={<Profile candidates={candidates} />}
           />
         </Routes>
-        
       </div>
     </Router>
   );

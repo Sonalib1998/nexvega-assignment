@@ -3,8 +3,8 @@ import { TextField, Button, Container, Typography, Box, Card, CardContent } from
 import { useNavigate, useParams } from 'react-router-dom';
 
 const HomeComponent = ({ addCandidate, updateCandidate, candidates }) => {
-  const { index } = useParams();
-  const isEditMode = index !== undefined;
+  const { id } = useParams();
+  const isEditMode = id !== undefined;
   const [formData, setFormData] = useState({
     name: '',
     skills: '',
@@ -13,29 +13,37 @@ const HomeComponent = ({ addCandidate, updateCandidate, candidates }) => {
     videoInterviewResults: '',
     codingResults: '',
   });
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    if (isEditMode && candidates[index]) {
-      setFormData(candidates[index]);
+    if (isEditMode && candidates.length > 0) {
+      const candidate = candidates.find(candidate => candidate._id === id);
+      if (candidate) setFormData(candidate);
     }
-  }, [isEditMode, index, candidates]);
+  }, [isEditMode, id, candidates]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    const parsedValue = name === 'yearsOfExperience' ? parseInt(value) : value;
     setFormData({
       ...formData,
-      [name]: value,
+      [name]: parsedValue,
     });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (isEditMode) {
-      updateCandidate(index, formData);
+    const validationErrors = validateForm(formData);
+    if (Object.keys(validationErrors).length === 0) {
+      if (isEditMode) {
+        updateCandidate(id, formData);
+      } else {
+        addCandidate(formData);
+      }
+      navigate('/');
     } else {
-      addCandidate(formData);
+      setErrors(validationErrors);
     }
-    navigate('/');
   };
 
   const navigate = useNavigate();
@@ -44,14 +52,34 @@ const HomeComponent = ({ addCandidate, updateCandidate, candidates }) => {
     navigate('/');
   };
 
+  const validateForm = (data) => {
+    const errors = {};
+    if (!data.name) {
+      errors.name = 'Name is required';
+    }
+    if (!data.skills) {
+      errors.skills = 'Skills are required';
+    }
+    if (data.yearsOfExperience === '' || isNaN(data.yearsOfExperience) || data.yearsOfExperience < 0) {
+      errors.yearsOfExperience = 'Years of Experience must be a valid number';
+    }
+    if (!data.location) {
+      errors.location = 'Location is required';
+    }
+    if (!data.videoInterviewResults) {
+      errors.videoInterviewResults = 'Video Interview Results are required';
+    }
+    if (!data.codingResults) {
+      errors.codingResults = 'Coding Results are required';
+    }
+    return errors;
+  };
+  
+  
+
   return (
     <Container maxWidth="sm">
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="100vh"
-      >
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
         <Card>
           <CardContent>
             <Typography variant="h4" component="h1" gutterBottom>
@@ -66,6 +94,8 @@ const HomeComponent = ({ addCandidate, updateCandidate, candidates }) => {
                 fullWidth
                 margin="normal"
                 variant="outlined"
+                error={errors.name}
+                helperText={errors.name && errors.name}
               />
               <TextField
                 label="Skills"
@@ -75,6 +105,8 @@ const HomeComponent = ({ addCandidate, updateCandidate, candidates }) => {
                 fullWidth
                 margin="normal"
                 variant="outlined"
+                error={errors.skills}
+                helperText={errors.skills && errors.skills}
               />
               <TextField
                 label="Years of Experience"
@@ -85,6 +117,8 @@ const HomeComponent = ({ addCandidate, updateCandidate, candidates }) => {
                 fullWidth
                 margin="normal"
                 variant="outlined"
+                error={errors.yearsOfExperience}
+                helperText={errors.yearsOfExperience && errors.yearsOfExperience}
               />
               <TextField
                 label="Location"
@@ -94,6 +128,8 @@ const HomeComponent = ({ addCandidate, updateCandidate, candidates }) => {
                 fullWidth
                 margin="normal"
                 variant="outlined"
+                error={errors.location}
+                helperText={errors.location && errors.location}
               />
               <TextField
                 label="Video Interview Results"
@@ -103,6 +139,8 @@ const HomeComponent = ({ addCandidate, updateCandidate, candidates }) => {
                 fullWidth
                 margin="normal"
                 variant="outlined"
+                error={errors.videoInterviewResults}
+                helperText={errors.videoInterviewResults && errors.videoInterviewResults}
               />
               <TextField
                 label="Coding Results"
@@ -112,6 +150,8 @@ const HomeComponent = ({ addCandidate, updateCandidate, candidates }) => {
                 fullWidth
                 margin="normal"
                 variant="outlined"
+                error={errors.codingResults}
+                helperText={errors.codingResults && errors.codingResults}
               />
               <Box mt={2}>
                 <Button type="submit" variant="contained" color="primary" fullWidth>
